@@ -32,10 +32,12 @@ from django.conf import settings
 from django.utils.translation import ugettext as _
 
 from desktop.lib.i18n import force_unicode, smart_str
+from libsentry.conf import is_enabled
 
 from indexer import conf
 from indexer.models import DATE_FIELD_TYPES, TEXT_FIELD_TYPES, INTEGER_FIELD_TYPES,\
                            DECIMAL_FIELD_TYPES, BOOLEAN_FIELD_TYPES
+
 
 LOG = logging.getLogger(__name__)
 TIMESTAMP_PATTERN = '\[([\w\d\s\-\/\:\+]*?)\]'
@@ -47,6 +49,7 @@ DEFAULT_FIELD = {
   'stored': 'true',
   'required': 'true'
 }
+  
 
 def get_config_template_path(solr_cloud_mode):
   if solr_cloud_mode:
@@ -99,16 +102,22 @@ def copy_configs(fields, unique_key_field, df, solr_cloud_mode=True):
       # Write complete schema.xml to copy
       with open(os.path.join(solr_config_path, 'conf/schema.xml'), 'w') as f:
         f.write(smart_str(schemaxml.xml))
-
+    print df
+    print '=================================================00000000000000000'
     if df:
+      print '================================================='
+      # Use secure template
+      solrconfig = 'conf/solrconfig.xml%s' % ('.secure' if is_enabled() else '')
+      print config_template_path + '/' + solrconfig
       # Get complete solrconfig.xml
-      with open(os.path.join(config_template_path, 'conf/solrconfig.xml')) as f:
+      with open(os.path.join(config_template_path, solrconfig)) as f:
         solrconfigxml = SolrConfigXml(f.read())
         solrconfigxml.defaultField(df)
 
       # Write complete solrconfig.xml to copy
       with open(os.path.join(solr_config_path, 'conf/solrconfig.xml'), 'w') as f:
         f.write(smart_str(solrconfigxml.xml))
+        
 
     return tmp_path, solr_config_path
   except Exception:

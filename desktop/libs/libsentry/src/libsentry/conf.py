@@ -40,3 +40,14 @@ SENTRY_CONF_DIR = Config(
   help=_t('Sentry configuration directory, where sentry-site.xml is located.'),
   default=os.environ.get("SENTRY_CONF_DIR", '/etc/sentry/conf')
 )
+
+
+
+def is_enabled():
+  #roles = get_api(request.user, component).list_sentry_roles_by_group(groupName)
+  return True
+#   try:
+#     from search.conf import SECURITY_ENABLED
+#     return SECURITY_ENABLED.get()
+#   except ImportError, e:
+#     LOG.warn("Search app is not enabled")

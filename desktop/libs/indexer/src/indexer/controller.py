@@ -32,6 +32,7 @@ from search.conf import SOLR_URL, SECURITY_ENABLED
 from indexer.conf import CORE_INSTANCE_DIR
 from indexer.utils import copy_configs, field_values_from_log, field_values_from_separated_file
 from search.models import Collection2
+from libsentry.conf import is_enabled
 
 
 LOG = logging.getLogger(__name__)
@@ -154,13 +155,18 @@ class CollectionManagerController(object):
   def _create_solr_cloud_collection(self, name, fields, unique_key_field, df):
     with ZookeeperClient(hosts=get_solr_ensemble(), read_only=False) as zc:
       root_node = '%s/%s' % (ZK_SOLR_CONFIG_NAMESPACE, name)
-
+      print '------------------------------------------'
       tmp_path, solr_config_path = copy_configs(fields, unique_key_field, df, True)
       try:
         config_root_path = '%s/%s' % (solr_config_path, 'conf')
         try:
           zc.copy_path(root_node, config_root_path)
+          
+#           if is_enabled():
+#             with open(os.path.join(config_root_path, 'solrconfig.xml.secure')) as f:
+#               zc.set(os.path.join(root_node, 'conf', 'solrconfig.xml'), f.read())
         except Exception, e:
+          print e
           zc.delete_path(root_node)
           raise PopupException(_('Error in copying Solr configurations.'), detail=e)
       finally:
