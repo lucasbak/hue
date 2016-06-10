@@ -41,7 +41,7 @@ from desktop.lib.django_util import render
 from desktop.lib.django_util import login_notrequired
 from desktop.lib.django_util import JsonResponse
 from desktop.log.access import access_warn, last_access_map
-from desktop.conf import LDAP, OAUTH, DEMO_ENABLED
+from desktop.conf import AUTH, LDAP, OAUTH, DEMO_ENABLED
 
 from hadoop.fs.exceptions import WebHdfsException
 from useradmin.models import get_profile
@@ -124,13 +124,18 @@ def dt_login(request, from_modal=False):
           request.session.delete_test_cookie()
 
         auto_create_home_backends = ['AllowAllBackend', 'LdapBackend', 'SpnegoDjangoBackend']
-        if is_first_login_ever or any(backend in backend_names for backend in auto_create_home_backends):
-          # Create home directory for first user.
-          try:
-            ensure_home_directory(request.fs, user.username)
-          except (IOError, WebHdfsException), e:
-            LOG.error(_('Could not create home directory.'), exc_info=e)
-            request.error(_('Could not create home directory.'))
+        ldap = ( 'LdapBackend' in backend_names )
+        if ((ldap == True) and (bool(LDAP.AUTO_CREATE_HOME_DIR.get())  == False)):
+          LOG.debug("Skipping home dir creation for user %s" % user.username )
+	else:
+            
+           if is_first_login_ever or any(backend in backend_names for backend in auto_create_home_backends):
+             # Create home directory for first user.
+             try:
+               ensure_home_directory(request.fs, user.username)
+             except (IOError, WebHdfsException), e:
+               LOG.error(_('Could not create home directory.'), exc_info=e)
+               request.error(_('Could not create home directory.'))
 
         if require_change_password(userprofile):
           return HttpResponseRedirect(urlresolvers.reverse('useradmin.views.edit_user', kwargs={'username': user.username}))
